@@ -1,0 +1,148 @@
+-------------------------------------------
+------------Sensor1------------------------
+-------------------------------------------
+MODULE capsule_sensor1(myTurn, inController1, inMainController)
+	VAR
+		state: {p_initial, s_waitPackage, s_waitCtrl, wait_t3_waitCtrl, p_canEnd, s_end};
+		port_mainController: protocol_ClientMain(FALSE, msg_Main, 0);
+		msg_Main : {null, request};
+
+		timer: protocol_timing(timerResetValue, timerResetFlag);
+		timerResetValue: -1..100;
+		timerResetFlag: boolean;
+
+		hitCount: 1 .. 7;
+
+	INIT
+		state = p_initial
+		& msg_Main = null
+		& timerResetValue = -1
+		& timerResetFlag = FALSE
+		& hitCount = 1
+
+	DEFINE
+		WAITING := (state = wait_t3_waitCtrl);
+		T1  := (state = p_initial);
+		T2  := (state = s_waitPackage & timer.timeout);
+		T3a := (state = s_waitCtrl & inMainController.in_reply);
+		T3b := (state = wait_t3_waitCtrl & myTurn);
+		T4  := (state = s_waitCtrl & inController1.in_confirm);
+		T5  := (state = wait_t3_waitCtrl & inController1.in_confirm);
+		T6  := (state = p_canEnd & guard_t6);
+		T7  := (state = p_canEnd & !guard_t6);
+		guard_t6:= (hitCount < 7);
+		t_none := !(T1 | T2 | T3a | T3b | T4 | T5 | T6 | T7);
+
+	INVAR (t_none
+		| (T1 & !T2 & !T3a & !T3b & !T4 & !T5 & !T6 & !T7)
+		| (!T1 & T2 & !T3a & !T3b & !T4 & !T5 & !T6 & !T7)
+		| (!T1 & !T2 & T3a & !T3b & !T4 & !T5 & !T6 & !T7)
+		| (!T1 & !T2 & !T3a & T3b & !T4 & !T5 & !T6 & !T7)
+		| (!T1 & !T2 & !T3a & !T3b & T4 & !T5 & !T6 & !T7)
+		| (!T1 & !T2 & !T3a & !T3b & !T4 & T5 & !T6 & !T7)
+		| (!T1 & !T2 & !T3a & !T3b & !T4 & !T5 & T6 & !T7)
+		| (!T1 & !T2 & !T3a & !T3b & !T4 & !T5 & !T6 & T7)
+		);
+
+	TRANS t_none 	-> (next(state) = state				& next(hitCount) = hitCount);
+	TRANS T1 		-> (next(state) = s_waitPackage 	& next(hitCount) = hitCount);
+	TRANS T2 		-> (next(state) = s_waitCtrl		& next(hitCount) = hitCount);
+	TRANS T3a 		-> (next(state) = wait_t3_waitCtrl 	& next(hitCount) = hitCount);
+	TRANS T3b 		-> (next(state) = s_waitCtrl		& next(hitCount) = hitCount);
+	TRANS T4		-> (next(state) = p_canEnd			& next(hitCount) = hitCount);
+	TRANS T5		-> (next(state) = p_canEnd			& next(hitCount) = hitCount);
+	TRANS T6 		-> (next(state) = s_waitPackage		& next(hitCount) = hitCount+1);
+	TRANS T7		-> (next(state) = s_end				& next(hitCount) = hitCount);
+
+	ASSIGN
+	next(msg_Main) := 			case
+									T2 | T3b: request;
+									t_none | T1 | T3a | T4 | T5 | T6 | T7: null;
+								esac;
+						
+						
+	next(timerResetValue) := 	case	
+									T1: {1, 2, 3}; 				-- rand()%3 ...use simulate -r option to randomly pick, else it picks 1st choice always.
+									T6: {1, 2, 3, 4, 5, 6, 7}; 	-- rand()%7 ...use simulate -r option to randomly pick, else it picks 1st choice always.
+									t_none | T2 | T3a | T3b | T4 | T5 | T7: -1;
+								esac;
+
+	next(timerResetFlag) := 	case
+									T1 | T6: TRUE;
+									t_none | T2 | T3a | T3b | T4 | T5 | T7: FALSE;
+								esac;
+
+
+-------------------------------------------
+------------Sensor2------------------------
+-------------------------------------------
+MODULE capsule_sensor2(myTurn, inController2, inMainController)
+	VAR
+		state: {p_initial, s_waitPackage, s_waitCtrl, wait_t3_waitCtrl, p_canEnd, s_end};
+		port_mainController: protocol_ClientMain(FALSE, msg_Main, 0);
+		msg_Main : {null, request};
+
+		timer: protocol_timing(timerResetValue, timerResetFlag);
+		timerResetValue: -1..100;
+		timerResetFlag: boolean;
+
+		hitCount: 1 .. 7;
+
+	INIT
+		state = p_initial
+		& msg_Main = null
+		& timerResetValue = -1
+		& timerResetFlag = FALSE
+		& hitCount = 1
+
+	DEFINE
+		WAITING := (state = wait_t3_waitCtrl);
+		T1  := (state = p_initial);
+		T2  := (state = s_waitPackage & timer.timeout);
+		T3a := (state = s_waitCtrl & inMainController.in_reply);
+		T3b := (state = wait_t3_waitCtrl & myTurn);
+		T4  := (state = s_waitCtrl & inController2.in_confirm);
+		T5  := (state = wait_t3_waitCtrl & inController2.in_confirm);
+		T6  := (state = p_canEnd & guard_t6);
+		T7  := (state = p_canEnd & !guard_t6);
+		guard_t6:= (hitCount < 7);
+		t_none := !(T1 | T2 | T3a | T3b | T4 | T5 | T6 | T7);
+
+	INVAR (t_none
+		| (T1 & !T2 & !T3a & !T3b & !T4 & !T5 & !T6 & !T7)
+		| (!T1 & T2 & !T3a & !T3b & !T4 & !T5 & !T6 & !T7)
+		| (!T1 & !T2 & T3a & !T3b & !T4 & !T5 & !T6 & !T7)
+		| (!T1 & !T2 & !T3a & T3b & !T4 & !T5 & !T6 & !T7)
+		| (!T1 & !T2 & !T3a & !T3b & T4 & !T5 & !T6 & !T7)
+		| (!T1 & !T2 & !T3a & !T3b & !T4 & T5 & !T6 & !T7)
+		| (!T1 & !T2 & !T3a & !T3b & !T4 & !T5 & T6 & !T7)
+		| (!T1 & !T2 & !T3a & !T3b & !T4 & !T5 & !T6 & T7)
+		);
+
+	TRANS t_none 	-> (next(state) = state				& next(hitCount) = hitCount);
+	TRANS T1 		-> (next(state) = s_waitPackage 	& next(hitCount) = hitCount);
+	TRANS T2 		-> (next(state) = s_waitCtrl		& next(hitCount) = hitCount);
+	TRANS T3a 		-> (next(state) = wait_t3_waitCtrl 	& next(hitCount) = hitCount);
+	TRANS T3b 		-> (next(state) = s_waitCtrl		& next(hitCount) = hitCount);
+	TRANS T4		-> (next(state) = p_canEnd			& next(hitCount) = hitCount);
+	TRANS T5		-> (next(state) = p_canEnd			& next(hitCount) = hitCount);
+	TRANS T6 		-> (next(state) = s_waitPackage		& next(hitCount) = hitCount+1);
+	TRANS T7		-> (next(state) = s_end				& next(hitCount) = hitCount);
+
+	ASSIGN
+	next(msg_Main) := 			case
+									T2 | T3b: request;
+									t_none | T1 | T3a | T4 | T5 | T6 | T7: null;
+								esac;
+
+
+	next(timerResetValue) := 	case
+									T1: {1, 2, 3}; 				-- rand()%3 ...use simulate -r option to randomly pick, else it picks 1st choice always.
+									T6: {1, 2, 3, 4, 5, 6, 7}; 	-- rand()%7 ...use simulate -r option to randomly pick, else it picks 1st choice always.
+									t_none | T2 | T3a | T3b | T4 | T5 | T7: -1;
+								esac;
+
+	next(timerResetFlag) := 	case
+									T1 | T6: TRUE;
+									t_none | T2 | T3a | T3b | T4 | T5 | T7: FALSE;
+								esac;

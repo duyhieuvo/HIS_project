@@ -1,0 +1,94 @@
+--------------------------------
+---------Controller1------------
+--------------------------------
+ 
+MODULE capsule_controller1(myTurn, inMain)
+ VAR
+	state : {p_initial, s_waitMain, s_countDown};
+	port_sensor : protocol_ClientClient(TRUE, msg_sensor, 0);
+	msg_sensor : {null, confirm}; 
+	portTimer: protocol_timing(timerResetValue,timerResetFlag);
+	timerResetValue: -1..100;
+	timerResetFlag : boolean;	
+ INIT
+	state = p_initial
+	& msg_sensor = null
+	& timerResetValue = -1
+	& timerResetFlag = FALSE
+ DEFINE
+    WAITING:= FALSE;
+	T1:= (state = p_initial);
+	T2:= (state = s_waitMain & inMain.in_reply);
+	T3:= (state = s_countDown & portTimer.timeout);
+	t_none := !(T1 | T2 | T3);
+ ASSIGN
+	next(timerResetValue):= case
+		t_none | T1 | T3: -1;
+		T2 : 5;
+	esac;
+	next(timerResetFlag):= case
+		t_none | T1 | T3: FALSE;
+		T2 : TRUE;
+	esac;
+	next(msg_sensor) := case
+		T3: confirm;
+		t_none | T1 | T2 : null;
+	esac;
+
+ INVAR ( t_none
+	| (T1 & !T2 & !T3)
+	| (!T1 & T2 & !T3)
+	| (!T1 & !T2 & T3)
+	);
+
+ TRANS t_none -> next(state) = state;
+ TRANS T1 -> next(state) = s_waitMain;
+ TRANS T2 -> next(state) = s_countDown;
+ TRANS T3 -> next(state) = s_waitMain;
+
+--------------------------------
+---------Controller2------------
+--------------------------------
+MODULE capsule_controller2(myTurn, inMain)
+ VAR
+	state : {p_initial, s_waitMain, s_countDown};
+	port_sensor : protocol_ClientClient(TRUE, msg_sensor, 0);
+	msg_sensor : {null, confirm};
+	portTimer: protocol_timing(timerResetValue,timerResetFlag);
+	timerResetValue: -1..100;
+	timerResetFlag : boolean;
+ INIT
+	state = p_initial
+	& msg_sensor = null
+	& timerResetValue = -1
+	& timerResetFlag = FALSE
+ DEFINE
+    WAITING:= FALSE;
+	T1:= (state = p_initial);
+	T2:= (state = s_waitMain & inMain.in_reply);
+	T3:= (state = s_countDown & portTimer.timeout);
+	t_none := !(T1 | T2 | T3);
+ ASSIGN
+	next(timerResetValue):= case
+		t_none | T1 | T3: -1;
+		T2 : 10;
+	esac;
+	next(timerResetFlag):= case
+		t_none | T1 | T3: FALSE;
+		T2 : TRUE;
+	esac;
+	next(msg_sensor) := case
+		T3: confirm;
+		t_none | T1 | T2 : null;
+	esac;
+
+ INVAR ( t_none
+	| (T1 & !T2 & !T3)
+	| (!T1 & T2 & !T3)
+	| (!T1 & !T2 & T3)
+	);	
+
+ TRANS t_none -> next(state) = state;
+ TRANS T1 -> next(state) = s_waitMain;
+ TRANS T2 -> next(state) = s_countDown;
+ TRANS T3 -> next(state) = s_waitMain;

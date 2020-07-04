@@ -1,0 +1,29 @@
+--------------------------------
+---------TOP capsule------------
+--------------------------------
+
+MODULE main
+    VAR
+        msgPtr_default: 0..5;
+        sensor1: capsule_sensor1(TURN_sensor1, ctrl1.port_sensor, mainCtrl.port_sensor1);
+        sensor2: capsule_sensor2(TURN_sensor2, ctrl2.port_sensor, mainCtrl.port_sensor2);
+        ctrl1: capsule_controller1(TURN_ctrl1, mainCtrl.port_controller1);
+        ctrl2: capsule_controller2(TURN_ctrl2, mainCtrl.port_controller2);
+        mainCtrl: capsule_mainController(TURN_mainCtrl, sensor1.port_mainController, sensor2.port_mainController);
+    INIT msgPtr_default = 0
+    ASSIGN
+        next(msgPtr_default) := case
+        	sensor1.WAITING & FREE: 1;
+        	sensor2.WAITING & FREE : 2;
+        	ctrl1.WAITING & FREE: 3;
+        	ctrl2.WAITING & FREE: 4;
+        	mainCtrl.WAITING & FREE : 5;
+        	TRUE : 0;
+        esac;
+    DEFINE
+     	FREE := (msgPtr_default = 0);
+     	TURN_sensor1 := (msgPtr_default = 1);
+     	TURN_sensor2 := (msgPtr_default = 2);
+     	TURN_ctrl1 := (msgPtr_default = 3);
+     	TURN_ctrl2 := (msgPtr_default = 4);
+     	TURN_mainCtrl := (msgPtr_default = 5);
